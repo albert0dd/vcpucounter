@@ -21,6 +21,10 @@
       max-width: 400px;
       margin-top: 20px;
     }
+    .usage-details {
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -30,25 +34,34 @@
     <canvas id="vcpuChart" width="400" height="200"></canvas>
   </div>
 
+  <div class="usage-details">
+    <p id="totalCPUs"></p>
+    <p id="controlPlaneCPUs"></p>
+    <p id="remainingCPUs"></p> <!-- Elemento para mostrar la resta -->
+  </div>
+  
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <script>
     async function updatevcpusage() {
       const vcpusageElement = document.getElementById('vcpusage');
+      const totalCPUsElement = document.getElementById('totalCPUs');
+      const controlPlaneCPUsElement = document.getElementById('controlPlaneCPUs');
+
       const response = await fetch('/vcpusage');
-      const { totalvCPUs, maxVCPUs } = await response.json();
-  
+      const { totalvCPUs, maxVCPUs, totalCPUs, controlPlaneCPUs } = await response.json();
+
       const vcpusage = `${totalvCPUs}/${maxVCPUs}`;
-      vcpusageElement.textContent = `vCPUs en Uso: ${vcpusage}`;
-  
+      vcpusageElement.textContent = `Total vCPUs in use: ${vcpusage}`;
+
       const ctx = document.getElementById('vcpuChart').getContext('2d');
       let data = [totalvCPUs, maxVCPUs - totalvCPUs];
       if (totalvCPUs > maxVCPUs) {
-        // Si el número de pods en uso supera el total, ajustamos los datos para mostrar un gráfico completo
         data = [maxVCPUs, 0];
-        vcpusageElement.textContent = `¡Excediendo el número total de pods! (${totalvCPUs}/${maxVCPUs})`;
+        vcpusageElement.textContent = `¡Excediendo el número total de vCPUs! (${totalvCPUs}/${maxVCPUs})`;
       }
-  
+
       const chart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -64,8 +77,15 @@
           maintainAspectRatio: false
         }
       });
+
+      totalCPUsElement.textContent = `Total vCPUs: ${totalvCPUs}`;
+      controlPlaneCPUsElement.textContent = `Supervisor vCPUs: ${controlPlaneCPUs}`;
+
+      const remainingCPUsElement = document.getElementById('remainingCPUs'); // Obteniendo el elemento para mostrar la resta
+      const remainingCPUs = totalvCPUs - controlPlaneCPUs; // Realizando la resta
+      remainingCPUsElement.textContent = `Namespaces vCPUs: ${remainingCPUs}`; // Mostrando el resultado
     }
-  
+
     window.onload = updatevcpusage;
   </script>
 </body>
