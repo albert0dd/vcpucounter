@@ -4,10 +4,7 @@ const app = express();
 
 const maxVCPUs = process.env.MAX_VCPU || 100;
 
-
 app.get('/vcpusage', (req, res) => {
-
-
   const shellCommand = `
     total_cpus=0
     vm_info=$(kubectl get virtualmachine -A -o custom-columns=NAME:.metadata.name,VMCLASS:.spec.className,NS:.metadata.namespace --no-headers)
@@ -22,7 +19,7 @@ app.get('/vcpusage', (req, res) => {
 
     control_plane_cpus=$(kubectl get nodes -l node-role.kubernetes.io/control-plane= --no-headers -o custom-columns=CPUS:.status.capacity.cpu | awk '{sum+=$1} END {print sum}')
     total_cpus=$((total_cpus + control_plane_cpus))
-    echo $total_cpus
+    echo "$total_cpus@$control_plane_cpus" // Separando los valores con @
   `;
 
   exec(shellCommand, (error, stdout, stderr) => {
@@ -35,13 +32,15 @@ app.get('/vcpusage', (req, res) => {
       return res.status(500).send('Si è verificato un errore durante l\'esecuzione dello script.');
     }
 
-    const totalvCPUs = parseInt(stdout.trim());
-    const percentageInUse = ((totalvCPUs / maxVCPUs) * 100).toFixed(2);
+    const [totalvCPUs, controlPlaneCPUs] = stdout.trim().split('@'); // Dividir los valores por '@'
 
+    const response = {
+      totalvCPUs: parseInt(totalvCPUs),
+      maxVCPUs,
+      controlPlaneCPUs: parseInt(controlPlaneCPUs)
+    };
 
-    res.json({ totalvCPUs, maxVCPUs });
-    //res.send(`${totalvCPUs}`);
-    // res.json({ totalCPUs });
+    res.json(response);
   });
 });
 
