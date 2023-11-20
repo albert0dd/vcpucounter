@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard vCPUs Kubernetes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .vcpu-usage-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      margin-top: 30px;
+    }
+    canvas {
+      max-width: 400px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Dashboard vCPUs Kubernetes</h1>
+  <div class="vcpu-usage-container">
+    <p id="vcpusage"></p>
+    <canvas id="vcpuChart" width="400" height="200"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    async function updatevcpusage() {
+      const vcpusageElement = document.getElementById('vcpusage');
+      const response = await fetch('/vcpusage');
+      const { totalvCPUs, maxVCPUs } = await response.json();
+  
+      const vcpusage = `${totalvCPUs}/${maxVCPUs}`;
+      vcpusageElement.textContent = `vCPUs en Uso: ${vcpusage}`;
+  
+      const ctx = document.getElementById('vcpuChart').getContext('2d');
+      let data = [totalvCPUs, maxVCPUs - totalvCPUs];
+      if (totalvCPUs > maxVCPUs) {
+        // Si el número de pods en uso supera el total, ajustamos los datos para mostrar un gráfico completo
+        data = [maxVCPUs, 0];
+        vcpusageElement.textContent = `¡Excediendo el número total de pods! (${totalvCPUs}/${maxVCPUs})`;
+      }
+  
+      const chart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['En uso', 'Disponibles'],
+          datasets: [{
+            data,
+            backgroundColor: ['#FF6384', '#36A2EB'],
+            hoverBackgroundColor: ['#FF6384', '#36A2EB']
+          }]
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false
+        }
+      });
+    }
+  
+    window.onload = updatevcpusage;
+  </script>
+</body>
+</html>
