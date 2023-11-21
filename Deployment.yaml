@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cuentacores-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cuentacores
+  template:
+    metadata:
+      labels:
+        app: cuentacores
+    spec:
+      containers:
+        - name: cuentacores-container
+          image: albertoacr.azurecr.io/lib/vpucounter:latest
+          env:
+          - name: KUBECONFIG
+            value: "/root/.kube/kubeconfig"
+          - name: MAX_VCPU
+            value: "120"
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: kube-config
+              mountPath: /root/.kube
+      volumes:
+        - name: kube-config
+          secret:
+            secretName: kube-config-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cuentacores-service
+spec:
+  selector:
+    app: cuentacores
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
