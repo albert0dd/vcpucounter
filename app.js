@@ -21,6 +21,7 @@ app.get('/vcpusage', (req, res) => {
 //     control_plane_cpus=$(kubectl get nodes -l node-role.kubernetes.io/control-plane= --no-headers -o custom-columns=CPUS:.status.capacity.cpu | awk '{sum+=$1} END {print sum}')
 //     total_cpus=$((total_cpus + control_plane_cpus))
 //     echo "$total_cpus@$control_plane_cpus" 
+//   add 
 //   `;
 
   exec(`bash ${shellCommand}`, (error, stdout, stderr) => {
